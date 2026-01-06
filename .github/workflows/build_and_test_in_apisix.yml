@@ -6,13 +6,7 @@ on:
   pull_request:
     branches: [master]
 
-jobs:
-  run_tests:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        events_module:
-          - lua-resty-worker-events
+
 jobs:
   build:
     name: CI using lua-resty-worker-events
