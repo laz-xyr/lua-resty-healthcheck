@@ -1081,7 +1081,7 @@ function checker:run_single_check(ip, port, hostname, hostheader)
 
       if type(self.ssl_cert) == "cdata" or type(self.ssl_key) == "cdata" then
           self:log(ERR, "ssl_cert and ssl_key must be pem strings when using tlshandshake")
-      else if self.ssl_cert and self.ssl_key then
+      elseif self.ssl_cert and self.ssl_key then
           opts.client_cert = self.ssl_cert_pem
           opts.client_priv_key = self.ssl_key_pem
       end
