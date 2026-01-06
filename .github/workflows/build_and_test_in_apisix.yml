@@ -13,7 +13,6 @@ jobs:
       matrix:
         events_module:
           - lua-resty-worker-events
-          - lua-resty-events
 
     steps:
     - name: Update and install OS dependencies
@@ -27,21 +26,15 @@ jobs:
         chmod +x build-apisix-base.sh
         ./build-apisix-base.sh latest
 
-    - name: Install manual dependencies
-      if: steps.cache-deps.outputs.cache-hit != 'true'
+    - name: Install luacheck dependencies
       run: |
         luarocks install luacheck
 
     - if: ${{ matrix.events_module == 'lua-resty-worker-events' }}
       name: Install manual dependencies
       run: |
-        sudo luarocks install luacheck
         sudo luarocks install lua-resty-worker-events 1.0.0
 
-    - if: ${{ matrix.events_module == 'lua-resty-events' }}
-      name: Install manual dependencies
-      run: |
-        sudo luarocks install luacheck
 
     - name: Install lua-resty-healthcheck deps
       run: sudo luarocks install --only-deps lua-resty-healthcheck-scm-1.rockspec

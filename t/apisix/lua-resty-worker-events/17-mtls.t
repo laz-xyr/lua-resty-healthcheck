@@ -1,4 +1,4 @@
-use Test::Nginx::Socket::Lua;
+use Test::Nginx::Socket::Lua 'no_plan';
 use Cwd qw(cwd);
 
 workers(1);
@@ -81,6 +81,8 @@ qq{
     }
 --- request
 GET /t
+--- response_body
+true
 
 
 === TEST 2: mtls check via healthcheck  with  cert/key
