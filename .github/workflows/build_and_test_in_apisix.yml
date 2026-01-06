@@ -19,26 +19,16 @@ jobs:
       run: |
         sudo apt-get update && sudo apt-get install -y luarocks
 
-    - uses: actions/checkout@v2
-    - name: Install apisix environment
-      run: |
-        wget https://raw.githubusercontent.com/api7/apisix-build-tools/master/build-apisix-base.sh
-        chmod +x build-apisix-base.sh
-        ./build-apisix-base.sh latest
-    
     - name: Install LuaRocks
       env: 
         LUAROCKS: 3.12.0
-        INSTALL_ROOT: /home/runner/work/cache/install-root
+        INSTALL_ROOT: /tmp
       run: |
+        cd $INSTALL_ROOT
         curl -sSLO https://luarocks.org/releases/luarocks-$LUAROCKS.tar.gz
         tar -xzf luarocks-$LUAROCKS.tar.gz
         cd luarocks-$LUAROCKS
-        ./configure \
-            --prefix=$INSTALL_ROOT \
-            --lua-suffix=jit \
-            --with-lua=$INSTALL_ROOT/luajit \
-            --with-lua-include=$INSTALL_ROOT/luajit/include/luajit-2.1
+        ./configure
         make build
         make install
 
@@ -46,6 +36,17 @@ jobs:
       run: |
         cd $GITHUB_WORKSPACE
         luarocks install luacheck
+
+    - uses: actions/checkout@v2
+    - name: Install apisix environment
+      run: |
+        wget https://raw.githubusercontent.com/api7/apisix-build-tools/master/build-apisix-base.sh
+        chmod +x build-apisix-base.sh
+        ./build-apisix-base.sh latest
+    
+
+
+
 
     - if: ${{ matrix.events_module == 'lua-resty-worker-events' }}
       name: Install manual dependencies
