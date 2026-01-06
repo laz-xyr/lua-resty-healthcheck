@@ -7,8 +7,7 @@ on:
     branches: [master]
 
 jobs:
-  build:
-    name: CI Test-on-apisix
+  run_tests:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -16,6 +15,9 @@ jobs:
           - lua-resty-worker-events
 
     steps:
+    - name: Checkout lua-resty-healthcheck
+      uses: actions/checkout@v3
+
     - name: Update and install OS dependencies
       run: |
         sudo apt-get update && sudo apt-get install -y luarocks
