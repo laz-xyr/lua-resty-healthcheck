@@ -1070,6 +1070,7 @@ function checker:run_single_check(ip, port, hostname, hostheader)
           self:log(ERR, "failed to set client certificate: ", err)
         end
       end
+      self:log(DEBUG, "using sslhandshake")
       session, err = sock:sslhandshake(nil, https_sni,
                                       self.checks.active.https_verify_certificate)
     else
@@ -1079,13 +1080,13 @@ function checker:run_single_check(ip, port, hostname, hostheader)
             verify = self.checks.active.https_verify_certificate
         }
 
-      if type(self.ssl_cert) == "cdata" or type(self.ssl_key) == "cdata" then
+      if type(self.ssl_cert) == "cdata" or type(self.ssl_key) == "cdata" then   -- if param is cdata  no set client certificate, tlshandshake not supports
           self:log(ERR, "ssl_cert and ssl_key must be pem strings when using tlshandshake")
-      elseif self.ssl_cert and self.ssl_key then
+      elseif self.ssl_cert_pem and self.ssl_key_pem then
           opts.client_cert = self.ssl_cert_pem
           opts.client_priv_key = self.ssl_key_pem
       end
-
+        self:log(DEBUG, "using tlshandshake")
         session, err = sock:tlshandshake(opts)
     end
 
@@ -1648,8 +1649,11 @@ function _M.new(opts)
 
   -- load certificate and key
   if opts.ssl_cert and opts.ssl_key then
+    self.ssl_cert = opts.ssl_cert  -- keep original params
+    self.ssl_key = opts.ssl_key  -- keep original params
+
     if type(opts.ssl_cert) == "cdata" then
-      self.ssl_cert_cdata = opts.ssl_cert  -- self.ssl_cert needed for tlshandshake
+      self.ssl_cert_cdata = opts.ssl_cert  -- self.ssl_cert_cdata needed for sslhandshake
     else
       self.ssl_cert_cdata = assert(ssl.parse_pem_cert(opts.ssl_cert))  -- self.ssl_cert_cdata needed for sslhandshake
       self.ssl_cert_pem = opts.ssl_cert  -- self.ssl_cert needed for tlshandshake

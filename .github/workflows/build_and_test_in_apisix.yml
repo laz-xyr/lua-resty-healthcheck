@@ -1,0 +1,66 @@
+name: Test-on-apisix
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  run_tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        events_module:
+          - lua-resty-worker-events
+          - lua-resty-events
+
+    steps:
+    - name: Update and install OS dependencies
+      run: |
+        sudo apt-get update && sudo apt-get install -y luarocks
+
+    - uses: actions/checkout@v2
+    - name: Install apisix environment
+      run: |
+        wget https://raw.githubusercontent.com/api7/apisix-build-tools/master/build-apisix-base.sh
+        chmod +x build-apisix-base.sh
+        ./build-apisix-base.sh latest
+
+    - name: Install manual dependencies
+      if: steps.cache-deps.outputs.cache-hit != 'true'
+      run: |
+        luarocks install luacheck
+
+    - if: ${{ matrix.events_module == 'lua-resty-worker-events' }}
+      name: Install manual dependencies
+      run: |
+        sudo luarocks install luacheck
+        sudo luarocks install lua-resty-worker-events 1.0.0
+
+    - if: ${{ matrix.events_module == 'lua-resty-events' }}
+      name: Install manual dependencies
+      run: |
+        sudo luarocks install luacheck
+
+    - name: Install lua-resty-healthcheck deps
+      run: sudo luarocks install --only-deps lua-resty-healthcheck-scm-1.rockspec
+
+    - name: Install Test::NGINX
+      run: |
+        sudo apt-get install cpanminus
+        cpanm --notest --local-lib=$HOME/perl5 local::lib && eval $(perl -I $HOME/perl5/lib/perl5/ -Mlocal::lib)
+        cpanm --notest Test::Nginx
+        cpanm --notest Test::Nginx::Socket::Lua
+
+
+    - name: Run tests
+      TEST_ENVIRONMENT: apisix
+      TEST_EVENTS_MODULE: ${{ matrix.events_module }}
+      run: |
+        export OR_PREFIX="/usr/local/openresty-debug"
+        export PATH=$OR_PREFIX/nginx/sbin:$OR_PREFIX/luajit/bin:$OR_PREFIX/bin:$PATH
+        echo "$PWD"
+        eval `luarocks path`
+        eval $(perl -I $HOME/perl5/lib/perl5/ -Mlocal::lib)
+        TEST_NGINX_RANDOMIZE=1 prove -I. -r t/apisix/${{ matrix.events_module }}/.

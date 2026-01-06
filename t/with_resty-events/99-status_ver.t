@@ -67,7 +67,7 @@ __DATA__
     location = /t {
         content_by_lua_block {
             ngx.say(true)
-            ngx.sleep(1) -- wait twice the interval and log print
+            ngx.sleep(2) -- wait twice the interval and make sure healthy log print
         }
     }
 --- request
