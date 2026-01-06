@@ -1061,16 +1061,33 @@ function checker:run_single_check(ip, port, hostname, hostheader)
   if self.checks.active.type == "https" then
     local https_sni, session, err
     https_sni = self.checks.active.https_sni or hostheader or hostname
-    if self.ssl_cert and self.ssl_key then
-      ok, err = sock:setclientcert(self.ssl_cert, self.ssl_key)
 
-      if not ok then
-        self:log(ERR, "failed to set client certificate: ", err)
+    if not sock.tlshandshake then
+        if self.ssl_cert_cdata and self.ssl_key_cdata then
+        ok, err = sock:setclientcert(self.ssl_cert_cdata, self.ssl_key_cdata)
+
+        if not ok then
+          self:log(ERR, "failed to set client certificate: ", err)
+        end
       end
-    end
+      session, err = sock:sslhandshake(nil, https_sni,
+                                      self.checks.active.https_verify_certificate)
+    else
+      local opts = {
+            reused_session = nil,
+            server_name = https_sni,
+            verify = self.checks.active.https_verify_certificate
+        }
 
-    session, err = sock:sslhandshake(nil, https_sni,
-                                     self.checks.active.https_verify_certificate)
+      if type(self.ssl_cert) == "cdata" or type(self.ssl_key) == "cdata" then
+          self:log(ERR, "ssl_cert and ssl_key must be pem strings when using tlshandshake")
+      else if self.ssl_cert and self.ssl_key then
+          opts.client_cert = self.ssl_cert_pem
+          opts.client_priv_key = self.ssl_key_pem
+      end
+
+        session, err = sock:tlshandshake(opts)
+    end
 
     if not session then
       sock:close()
@@ -1632,15 +1649,17 @@ function _M.new(opts)
   -- load certificate and key
   if opts.ssl_cert and opts.ssl_key then
     if type(opts.ssl_cert) == "cdata" then
-      self.ssl_cert = opts.ssl_cert
+      self.ssl_cert_cdata = opts.ssl_cert  -- self.ssl_cert needed for tlshandshake
     else
-      self.ssl_cert = assert(ssl.parse_pem_cert(opts.ssl_cert))
+      self.ssl_cert_cdata = assert(ssl.parse_pem_cert(opts.ssl_cert))  -- self.ssl_cert_cdata needed for sslhandshake
+      self.ssl_cert_pem = opts.ssl_cert  -- self.ssl_cert needed for tlshandshake
     end
 
     if type(opts.ssl_key) == "cdata" then
-      self.ssl_key = opts.ssl_key
+      self.ssl_key_cdata = opts.ssl_key
     else
-      self.ssl_key = assert(ssl.parse_pem_priv_key(opts.ssl_key))
+      self.ssl_key_cdata = assert(ssl.parse_pem_priv_key(opts.ssl_key)) -- self.ssl_key_cdata needed for sslhandshake
+      self.ssl_key_pem = opts.ssl_key -- self.ssl_cert needed for tlshandshake
     end
 
   end
