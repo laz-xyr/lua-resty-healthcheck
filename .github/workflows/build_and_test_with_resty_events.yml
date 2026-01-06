@@ -17,7 +17,7 @@ jobs:
     steps:
       - name: Update and install OS dependencies
         run: |
-          sudo apt-get update && sudo apt-get install -y libssl-dev ssl-cert
+          sudo apt-get update && sudo apt-get install -y libssl-dev ssl-cert libpcre3 libpcre3-dev
           sudo systemctl disable nginx
           sudo systemctl stop nginx
 
