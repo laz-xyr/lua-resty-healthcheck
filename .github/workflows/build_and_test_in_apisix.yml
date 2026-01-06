@@ -28,9 +28,9 @@ jobs:
         curl -sSLO https://luarocks.org/releases/luarocks-$LUAROCKS.tar.gz
         tar -xzf luarocks-$LUAROCKS.tar.gz
         cd luarocks-$LUAROCKS
-        ./configure
-        make build
-        make install
+        sudo ./configure
+        sudo make build
+        sudo make install
 
     - name: Install luacheck dependencies
       run: |
