@@ -15,6 +15,12 @@ jobs:
           - lua-resty-worker-events
 
     steps:
+    - name: Install apisix environment
+      run: |
+        wget https://raw.githubusercontent.com/api7/apisix-build-tools/master/build-apisix-base.sh
+        chmod +x build-apisix-base.sh
+        ./build-apisix-base.sh latest
+
     - name: Update and install OS dependencies
       run: |
         sudo apt-get update && sudo apt-get install -y luarocks
@@ -26,12 +32,6 @@ jobs:
       run: |
         cd $GITHUB_WORKSPA
         sudo luarocks install luacheck
-
-    - name: Install apisix environment
-      run: |
-        wget https://raw.githubusercontent.com/api7/apisix-build-tools/master/build-apisix-base.sh
-        chmod +x build-apisix-base.sh
-        ./build-apisix-base.sh latest
 
     - if: ${{ matrix.events_module == 'lua-resty-worker-events' }}
       name: Install manual dependencies
@@ -48,7 +48,6 @@ jobs:
         cpanm --notest --local-lib=$HOME/perl5 local::lib && eval $(perl -I $HOME/perl5/lib/perl5/ -Mlocal::lib)
         cpanm --notest Test::Nginx
         cpanm --notest Test::Nginx::Socket::Lua
-
 
     - name: Run tests
       env:
