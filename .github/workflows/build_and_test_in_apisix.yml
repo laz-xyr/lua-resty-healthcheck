@@ -7,7 +7,7 @@ on:
     branches: [master]
 
 jobs:
-  run_tests:
+  build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -51,8 +51,9 @@ jobs:
 
 
     - name: Run tests
-      TEST_ENVIRONMENT: apisix
-      TEST_EVENTS_MODULE: ${{ matrix.events_module }}
+      env:
+        TEST_ENVIRONMENT: apisix
+        TEST_EVENTS_MODULE: ${{ matrix.events_module }}
       run: |
         export OR_PREFIX="/usr/local/openresty-debug"
         export PATH=$OR_PREFIX/nginx/sbin:$OR_PREFIX/luajit/bin:$OR_PREFIX/bin:$PATH
