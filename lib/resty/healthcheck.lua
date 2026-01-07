@@ -1568,8 +1568,11 @@ end
 
 local function check_valid_tlshandshake()
     local sock, err = ngx.socket.tcp()
-    assert(sock, "failed to create stream socket: " .. err)
+    if not sock then
+        assert(false, "failed to create stream socket: " .. err)
+    end
     if sock.tlshandshake then
+      ngx.log(ngx.ERR, type(sock.tlshandshake))
       return true
     else
       return false
@@ -1658,9 +1661,9 @@ function _M.new(opts)
 
   -- load certificate and key
   if opts.ssl_cert and opts.ssl_key then
-    if check_valid_tlshandshake then   -- use tlshandshake mtls in apisix environment
+    if check_valid_tlshandshake() then   -- use tlshandshake mtls in apisix environment
         if type(opts.ssl_cert) == "cdata" or type(opts.ssl_key) == "cdata" then
-          assert(nil, "ssl_cert and ssl_key must be pem strings when using tlshandshake")  -- apisix route tls.certificate always string
+          assert(false, "ssl_cert and ssl_key must be pem strings when using tlshandshake")  -- apisix route tls.certificate always string
         end
 
         self.ssl_cert = opts.ssl_cert
