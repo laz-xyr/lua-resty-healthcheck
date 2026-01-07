@@ -16,15 +16,17 @@ jobs:
           - lua-resty-events
 
     steps:
+    - name: Update and install OS dependencies
+      run: |
+        sudo apt-get update && sudo apt-get install -y luarocks cpanminus
+
     - name: Install apisix environment
       run: |
         wget https://raw.githubusercontent.com/api7/apisix-build-tools/master/build-apisix-runtime.sh
         chmod +x build-apisix-runtime.sh
         ./build-apisix-runtime.sh
 
-    - name: Update and install OS dependencies
-      run: |
-        sudo apt-get update && sudo apt-get install -y luarocks
+
 
     - uses: actions/checkout@v4
       name: Checkout lua-resty-healthcheck
