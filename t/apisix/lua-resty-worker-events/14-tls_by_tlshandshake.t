@@ -1,9 +1,16 @@
-use Test::Nginx::Socket::Lua;
+our $SkipReason;
+
+BEGIN {
+    if ($ENV{TEST_ENVIRONMENT} ne "apisix") {
+        $SkipReason = "Only for apisix environment";
+    }
+}
+
+use Test::Nginx::Socket::Lua $SkipReason ? (skip_all => $SkipReason) : ('no_plan');
 use Cwd qw(cwd);
 
 workers(1);
 
-plan tests => blocks() * 2;
 
 my $pwd = cwd();
 
