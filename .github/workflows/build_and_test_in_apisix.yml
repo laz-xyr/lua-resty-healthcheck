@@ -64,4 +64,4 @@ jobs:
       run: |
         # 打印你需要的日志，比如：
         echo "===== 构建失败，打印gmake日志 ====="
-        cat $GITHUB_WORKSPA/t/servroot/logs/error.log
+        cat $GITHUB_WORKSPACE/t/servroot/logs/error.log
