@@ -17,7 +17,7 @@ $ENV{TEST_NGINX_SERVROOT} = server_root();
 no_shuffle();
 
 our $HttpConfig = qq{
-    lua_package_path "$pwd/lib/?.lua;;";
+    lua_package_path "$pwd/lib/?.lua;/usr/local/lib/lua/?.lua;/usr/local/lib/lua/?/init.lua;;";# add lua-resty-events path
     lua_shared_dict test_shm 8m;
 
     init_worker_by_lua_block {
