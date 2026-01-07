@@ -18,16 +18,13 @@ jobs:
     steps:
     - name: Update and install OS dependencies
       run: |
-        sudo apt-get update && sudo apt-get install -y luarocks cpanminus build-essential libncurses5-dev \
-        libreadline-dev libssl-dev perl libpcre3 libpcre3-dev libpcre2-dev xz-utils libyaml-dev
+        sudo apt-get update && sudo apt-get install -y luarocks cpanminus
 
     - name: Install apisix environment
       run: |
         wget https://raw.githubusercontent.com/api7/apisix-build-tools/master/build-apisix-runtime.sh
         chmod +x build-apisix-runtime.sh
         ./build-apisix-runtime.sh
-
-
 
     - uses: actions/checkout@v4
       name: Checkout lua-resty-healthcheck
@@ -61,10 +58,5 @@ jobs:
         echo "$PWD"
         eval `luarocks path`
         eval $(perl -I $HOME/perl5/lib/perl5/ -Mlocal::lib)
-        TEST_NGINX_RANDOMIZE=1 prove -I. -r t/apisix/${{ matrix.events_module }}/. -v
-    - name: 任意步骤失败后打印日志
-      if: failure()  # 只要Job中任意步骤失败，就执行此步骤
-      run: |
-        # 打印你需要的日志，比如：
-        echo "===== 构建失败，打印gmake日志 ====="
-        cat $GITHUB_WORKSPACE/t/servroot/logs/error.log
+        TEST_NGINX_RANDOMIZE=1 prove -I. -r t/apisix/${{ matrix.events_module }}/.
+

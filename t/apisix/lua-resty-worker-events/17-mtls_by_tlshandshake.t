@@ -7,39 +7,18 @@ BEGIN {
 }
 
 use Test::Nginx::Socket::Lua $SkipReason ? (skip_all => $SkipReason) : ('no_plan');
+
 use Cwd qw(cwd);
 
 workers(1);
 
 my $pwd = cwd();
-$ENV{TEST_NGINX_SERVROOT} = server_root();
-
 no_shuffle();
 
 our $HttpConfig = qq{
-    lua_package_path "$pwd/lib/?.lua;/usr/local/lib/lua/?.lua;/usr/local/lib/lua/?/init.lua;;";# add lua-resty-events path
+    lua_package_path "$pwd/lib/?.lua;;";
     lua_shared_dict test_shm 8m;
-
-    init_worker_by_lua_block {
-    local we = require "resty.events.compat"
-    assert(we.configure({
-        unique_timeout = 5,
-        broker_id = 0,
-        listening = "unix:$ENV{TEST_NGINX_SERVROOT}/worker_events.sock"
-    }))
-    assert(we.configured())
-    }
-
-    server {
-        server_name kong_worker_events;
-        listen unix:$ENV{TEST_NGINX_SERVROOT}/worker_events.sock;
-        access_log off;
-        location / {
-            content_by_lua_block {
-                require("resty.events.compat").run()
-            }
-        }
-    }
+    lua_shared_dict my_worker_events 8m;
 
     server {
         listen 8765 ssl;
@@ -66,6 +45,8 @@ qq{
 --- config
     location = /t {
         content_by_lua_block {
+            local we = require "resty.worker.events"
+            assert(we.configure{ shm = "my_worker_events", interval = 0.1 })
 
             local pl_file = require "pl.file"
             local cert = pl_file.read("t/apisix/certs/mtls_client.crt", true)
@@ -75,7 +56,6 @@ qq{
             local checker = healthcheck.new({
                 name = "testing_mtls",
                 shm_name = "test_shm",
-                events_module = "resty.events",
                 type = "http",
                 ssl_cert = cert,
                 ssl_key = key,
@@ -112,7 +92,7 @@ GET /t
 true
 
 
-=== TEST 2: mtls check with  cert/key
+=== TEST 2: mtls check with cert/key
 --- http_config eval
 qq{
     $::HttpConfig
@@ -120,6 +100,9 @@ qq{
 --- config
     location /t {
         content_by_lua_block {
+            local we = require "resty.worker.events"
+            assert(we.configure{ shm = "my_worker_events", interval = 0.1 })
+
             local pl_file = require "pl.file"
             local cert = pl_file.read("t/apisix/certs/mtls_client.crt", true)
             local key = pl_file.read("t/apisix/certs/mtls_client.key", true)
@@ -128,7 +111,6 @@ qq{
             local checker = healthcheck.new({
                 name = "testing",
                 shm_name = "test_shm",
-                events_module = "resty.events",
                 ssl_cert = cert,
                 ssl_key = key,
                 checks = {
@@ -171,6 +153,8 @@ qq{
 --- config
     location /t {
         content_by_lua_block {
+            local we = require "resty.worker.events"
+            assert(we.configure{ shm = "my_worker_events", interval = 0.1 })
 
             local pl_file = require "pl.file"
             local ssl = require "ngx.ssl"
@@ -181,12 +165,11 @@ qq{
             local ok, err = pcall(healthcheck.new,{
                 name = "testing",
                 shm_name = "test_shm",
-                events_module = "resty.events",
                 ssl_cert = cert,
                 ssl_key = key
             })
             ngx.log(ngx.ERR, err)
-        }
+        } 
     }
 
 --- request
@@ -203,6 +186,8 @@ qq{
 --- config
     location /t {
         content_by_lua_block {
+            local we = require "resty.worker.events"
+            assert(we.configure{ shm = "my_worker_events", interval = 0.1 })
 
             local cert
             local key
@@ -211,7 +196,6 @@ qq{
             local checker = healthcheck.new({
                 name = "testing",
                 shm_name = "test_shm",
-                events_module = "resty.events",
                 ssl_cert = cert,
                 ssl_key = key,
                 checks = {
