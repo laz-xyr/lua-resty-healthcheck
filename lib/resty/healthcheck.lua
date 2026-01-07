@@ -1063,8 +1063,8 @@ function checker:run_single_check(ip, port, hostname, hostheader)
     https_sni = self.checks.active.https_sni or hostheader or hostname
 
     if not sock.tlshandshake then
-        if self.ssl_cert_cdata and self.ssl_key_cdata then
-        ok, err = sock:setclientcert(self.ssl_cert_cdata, self.ssl_key_cdata)
+        if self.ssl_cert and self.ssl_key then
+        ok, err = sock:setclientcert(self.ssl_cert, self.ssl_key)
 
         if not ok then
           self:log(ERR, "failed to set client certificate: ", err)
@@ -1080,11 +1080,9 @@ function checker:run_single_check(ip, port, hostname, hostheader)
             verify = self.checks.active.https_verify_certificate
         }
 
-      if type(self.ssl_cert) == "cdata" or type(self.ssl_key) == "cdata" then   -- if param is cdata  no set client certificate, tlshandshake not supports
-          self:log(ERR, "ssl_cert and ssl_key must be pem strings when using tlshandshake")
-      elseif self.ssl_cert_pem and self.ssl_key_pem then
-          opts.client_cert = self.ssl_cert_pem
-          opts.client_priv_key = self.ssl_key_pem
+      if self.ssl_cert and self.ssl_key then
+          opts.client_cert = self.ssl_cert
+          opts.client_priv_key = self.ssl_key
       end
         self:log(DEBUG, "using tlshandshake")
         session, err = sock:tlshandshake(opts)
@@ -1567,6 +1565,17 @@ do
   end
 end
 
+
+local function check_valid_tlshandshake()
+    local sock, err = ngx.socket.tcp()
+    assert(sock, "failed to create stream socket: " .. err)
+    if sock.tlshandshake then
+      return true
+    else
+      return false
+    end
+end
+
 --- Creates a new health-checker instance.
 -- It will be started upon creation.
 --
@@ -1649,23 +1658,27 @@ function _M.new(opts)
 
   -- load certificate and key
   if opts.ssl_cert and opts.ssl_key then
-    self.ssl_cert = opts.ssl_cert  -- keep original params
-    self.ssl_key = opts.ssl_key  -- keep original params
+    if check_valid_tlshandshake then   -- use tlshandshake mtls in apisix environment
+        if type(opts.ssl_cert) == "cdata" or type(opts.ssl_key) == "cdata" then
+          assert(nil, "ssl_cert and ssl_key must be pem strings when using tlshandshake")  -- apisix route tls.certificate always string
+        end
 
-    if type(opts.ssl_cert) == "cdata" then
-      self.ssl_cert_cdata = opts.ssl_cert  -- self.ssl_cert_cdata needed for sslhandshake
-    else
-      self.ssl_cert_cdata = assert(ssl.parse_pem_cert(opts.ssl_cert))  -- self.ssl_cert_cdata needed for sslhandshake
-      self.ssl_cert_pem = opts.ssl_cert  -- self.ssl_cert needed for tlshandshake
+        self.ssl_cert = opts.ssl_cert
+        self.ssl_key = opts.ssl_key
+
+    else  -- use sslhandshake
+      if type(opts.ssl_cert) == "cdata" then
+        self.ssl_cert = opts.ssl_cert
+      else
+        self.ssl_cert = assert(ssl.parse_pem_cert(opts.ssl_cert))
+      end
+
+      if type(opts.ssl_key) == "cdata" then
+        self.ssl_key = opts.ssl_key
+      else
+        self.ssl_key = assert(ssl.parse_pem_priv_key(opts.ssl_key))
+      end
     end
-
-    if type(opts.ssl_key) == "cdata" then
-      self.ssl_key_cdata = opts.ssl_key
-    else
-      self.ssl_key_cdata = assert(ssl.parse_pem_priv_key(opts.ssl_key)) -- self.ssl_key_cdata needed for sslhandshake
-      self.ssl_key_pem = opts.ssl_key -- self.ssl_cert needed for tlshandshake
-    end
-
   end
 
   -- other properties

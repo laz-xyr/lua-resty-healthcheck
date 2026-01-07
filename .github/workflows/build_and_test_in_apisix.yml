@@ -58,4 +58,4 @@ jobs:
         echo "$PWD"
         eval `luarocks path`
         eval $(perl -I $HOME/perl5/lib/perl5/ -Mlocal::lib)
-        TEST_NGINX_RANDOMIZE=1 prove -I. -r t/apisix/${{ matrix.events_module }}/.
+        TEST_NGINX_RANDOMIZE=1 prove -I. -r t/apisix/${{ matrix.events_module }}/. -v

@@ -49,8 +49,8 @@ qq{
             assert(we.configure{ shm = "my_worker_events", interval = 0.1 })
 
             local pl_file = require "pl.file"
-            local cert = pl_file.read("t/with_worker-events/util/cert.pem", true)
-            local key = pl_file.read("t/with_worker-events/util/key.pem", true)
+            local cert = pl_file.read("t/apisix/certs/mtls_client.crt", true)
+            local key = pl_file.read("t/apisix/certs/mtls_client.key", true)
 
             local healthcheck = require("resty.healthcheck")
             local checker = healthcheck.new({
@@ -145,7 +145,7 @@ true
 using tlshandshake
 
 
-=== TEST 3: mtls check via healthcheck  with unsupport parsed cert/key
+=== TEST 3: mtls check with unsupport parsed cert/key
 --- http_config eval
 qq{
     $::HttpConfig
@@ -162,43 +162,20 @@ qq{
             local key = ssl.parse_pem_priv_key(pl_file.read("t/apisix/certs/mtls_client.key", true))
 
             local healthcheck = require("resty.healthcheck")
-            local checker = healthcheck.new({
+            local ok, err = pcall(healthcheck.new,{
                 name = "testing",
                 shm_name = "test_shm",
                 ssl_cert = cert,
-                ssl_key = key,
-                checks = {
-                active = {
-                        type = "https",
-                        https_verify_certificate = false,
-                        http_path = "/healthz",
-                        healthy  = {
-                            interval = 0.1,  -- we don't want  check healthy node
-                            successes = 1
-                        },
-                        unhealthy  = {
-                            interval = 999,
-                            http_failures = 1,
-                            http_statuses = { 400 }
-                        }
-                    },
-                }
+                ssl_key = key
             })
-            local ok, err = checker:add_target("127.0.0.1", 8765, "127.0.0.1", true) -- init unhealthy node
-            ngx.sleep(0.5) -- wait for check
-            ngx.status = 200
-            ngx.say(checker:get_target_status("127.0.0.1", 8765))  -- true
-        }
-        
+            ngx.log(ngx.ERR, err)
+        } 
     }
 
 --- request
 GET /t
---- response_body
-false
 --- error_log
 ssl_cert and ssl_key must be pem strings when using tlshandshake
-using tlshandshake
 
 
 === TEST 4: mtls check without cert/key
