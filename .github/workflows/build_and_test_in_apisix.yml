@@ -18,7 +18,8 @@ jobs:
     steps:
     - name: Update and install OS dependencies
       run: |
-        sudo apt-get update && sudo apt-get install -y luarocks cpanminus
+        sudo apt-get update && sudo apt-get install -y luarocks cpanminus build-essential libncurses5-dev \
+        libreadline-dev libssl-dev perl libpcre3 libpcre3-dev libpcre2-dev xz-utils libyaml-dev
 
     - name: Install apisix environment
       run: |
@@ -55,7 +56,7 @@ jobs:
       env:
         TEST_ENVIRONMENT: apisix
       run: |
-        export OR_PREFIX="/usr/local/openresty-debug"
+        export OR_PREFIX="/usr/local/openresty"
         export PATH=$OR_PREFIX/nginx/sbin:$OR_PREFIX/luajit/bin:$OR_PREFIX/bin:$PATH
         echo "$PWD"
         eval `luarocks path`
