@@ -13,6 +13,7 @@ jobs:
       matrix:
         events_module:
           - lua-resty-worker-events
+          - lua-resty-events
 
     steps:
     - name: Install apisix environment
@@ -25,21 +26,20 @@ jobs:
       run: |
         sudo apt-get update && sudo apt-get install -y luarocks
 
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       name: Checkout lua-resty-healthcheck
 
-    - name: Install manual dependencies
+    - name: Install luacheck dependencies
       run: |
         cd $GITHUB_WORKSPA
         sudo luarocks install luacheck
 
     - if: ${{ matrix.events_module == 'lua-resty-worker-events' }}
-      name: Install manual dependencies
+      name: Install resty-worker-events dependencies
       run: |
-        sudo luarocks install luacheck
         sudo luarocks install lua-resty-worker-events 1.0.0
 
-    - name: Install lua-resty-healthcheck deps
+    - name: Install lua-resty-healthcheck dependencies
       run: sudo luarocks install --only-deps lua-resty-healthcheck-scm-1.rockspec
 
     - name: Install Test::NGINX
@@ -52,7 +52,6 @@ jobs:
     - name: Run tests
       env:
         TEST_ENVIRONMENT: apisix
-        TEST_EVENTS_MODULE: ${{ matrix.events_module }}
       run: |
         export OR_PREFIX="/usr/local/openresty-debug"
         export PATH=$OR_PREFIX/nginx/sbin:$OR_PREFIX/luajit/bin:$OR_PREFIX/bin:$PATH
